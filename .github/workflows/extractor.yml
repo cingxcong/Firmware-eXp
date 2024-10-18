@@ -25,10 +25,6 @@ jobs:
     - name: Clone payload-dumper-go
       run: git clone https://github.com/ssut/payload-dumper-go.git
 
-    # Change directory to the cloned repository
-    - name: Change directory
-      run: cd payload-dumper-go
-
     # Build the payload-dumper-go binary
     - name: Build payload-dumper-go
       run: |
@@ -58,6 +54,7 @@ jobs:
     - name: Extract from system.new.dat
       run: |
         if [[ -f "system.new.dat" ]]; then
+          echo "Extracting from system.new.dat"
           ./payload-dumper-go/payload-dumper-go system.new.dat
         fi
 

@@ -19,7 +19,7 @@ jobs:
 
     # Install required dependencies
     - name: Install xz and unzip
-      run: sudo apt-get update && sudo apt-get install -y xz-utils unzip git
+      run: sudo apt-get update && sudo apt-get install -y xz-utils unzip git golang-go
 
     # Clone the payload-dumper-go repository
     - name: Clone payload-dumper-go
@@ -52,6 +52,13 @@ jobs:
       run: |
         if [ -f "payload.bin" ]; then
           ./payload-dumper-go payload.bin
+        fi
+
+    # Extract from system.new.dat if found
+    - name: Extract from system.new.dat
+      run: |
+        if [[ -f "system.new.dat" ]]; then
+          ./payload-dumper-go system.new.dat
         fi
 
     # Extract other image files from the firmware (if present)

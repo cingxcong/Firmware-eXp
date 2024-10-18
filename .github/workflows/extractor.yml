@@ -47,6 +47,7 @@ jobs:
     - name: Extract partitions from payload.bin
       run: |
         if [ -f "payload.bin" ]; then
+          echo "Extracting from payload.bin"
           ./payload-dumper-go/payload-dumper-go payload.bin
         fi
 
@@ -55,6 +56,7 @@ jobs:
       run: |
         if [[ -f "system.new.dat" ]]; then
           echo "Extracting from system.new.dat"
+          # Use payload.bin for initializing extraction from system.new.dat
           ./payload-dumper-go/payload-dumper-go system.new.dat
         fi
 

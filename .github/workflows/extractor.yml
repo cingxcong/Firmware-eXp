@@ -24,7 +24,7 @@ jobs:
     # Download payload-dumper-go
     - name: Download payload-dumper-go
       run: |
-        wget https://github.com/ssut/payload-dumper-go/releases/download/v1.2.0/payload-dumper-go_linux_amd64.tar.gz
+        wget https://github.com/ssut/payload-dumper-go/releases/download/v1.3.0/payload-dumper-go_linux_amd64.tar.gz
         tar -xzvf payload-dumper-go_linux_amd64.tar.gz
         chmod +x payload-dumper-go
         sudo mv payload-dumper-go /usr/local/bin/
@@ -54,7 +54,6 @@ jobs:
         if [[ -f "firmware.zip" && ! -f "payload.bin" ]]; then
           mkdir extracted_images
           unzip firmware.zip -d extracted_images
-          # Add commands here to handle different image types like boot.img, recovery.img
         fi
 
     # Move recovery.img to output folder if it exists

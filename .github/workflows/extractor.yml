@@ -1,0 +1,76 @@
+name: Firmware Extraction and Recovery Image Extraction
+
+on:
+  workflow_dispatch:
+    inputs:
+      firmware_url:
+        description: 'URL of the firmware (e.g., a zip file or a payload.bin)'
+        required: true
+        default: 'https://example.com/path/to/firmware.zip'
+
+jobs:
+  extract_firmware_and_recovery_img:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout the repo
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    # Install required dependencies
+    - name: Install xz and unzip
+      run: sudo apt-get update && sudo apt-get install -y xz-utils unzip
+
+    # Download payload-dumper-go
+    - name: Download payload-dumper-go
+      run: |
+        wget https://github.com/ssut/payload-dumper-go/releases/download/v1.2.0/payload-dumper-go_linux_amd64.tar.gz
+        tar -xzvf payload-dumper-go_linux_amd64.tar.gz
+        chmod +x payload-dumper-go
+        sudo mv payload-dumper-go /usr/local/bin/
+
+    # Download the firmware archive or payload.bin from the given URL
+    - name: Download firmware archive
+      run: |
+        wget -O firmware.zip ${{ github.event.inputs.firmware_url }}
+
+    # Extract firmware archive (if it's a zip)
+    - name: Extract firmware archive
+      if: endsWith( github.event.inputs.firmware_url, '.zip' )
+      run: unzip firmware.zip
+
+    # Extract partitions from payload.bin if found in the firmware
+    - name: Extract partitions from payload.bin
+      if: exists('payload.bin')
+      run: payload-dumper-go payload.bin
+
+    # Extract other image files from the firmware (if present)
+    - name: Extract images from archive
+      if: exists('firmware.zip') && !exists('payload.bin')
+      run: |
+        mkdir extracted_images
+        unzip firmware.zip -d extracted_images
+        # Add commands here to handle different image types like boot.img, recovery.img
+
+    # Move recovery.img to output folder if it exists
+    - name: Move recovery.img to output
+      run: |
+        mkdir -p output
+        if [ -f recovery.img ]; then
+          mv recovery.img output/
+        fi
+
+    # Upload recovery.img as an artifact
+    - name: Upload recovery.img
+      uses: actions/upload-artifact@v3
+      with:
+        name: recovery-img
+        path: output/recovery.img
+
+    # Upload other images as an artifact (optional)
+    - name: Upload extracted images (optional)
+      uses: actions/upload-artifact@v3
+      if: exists('extracted_images/')
+      with:
+        name: extracted-images
+        path: extracted_images/

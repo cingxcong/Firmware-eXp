@@ -51,14 +51,14 @@ jobs:
     - name: Extract partitions from payload.bin
       run: |
         if [ -f "payload.bin" ]; then
-          ./payload-dumper-go payload.bin
+          ./payload-dumper-go/payload-dumper-go payload.bin
         fi
 
     # Extract from system.new.dat if found
     - name: Extract from system.new.dat
       run: |
         if [[ -f "system.new.dat" ]]; then
-          ./payload-dumper-go system.new.dat
+          ./payload-dumper-go/payload-dumper-go system.new.dat
         fi
 
     # Extract other image files from the firmware (if present)

@@ -36,27 +36,32 @@ jobs:
 
     # Extract firmware archive (if it's a zip)
     - name: Extract firmware archive
-      if: endsWith( github.event.inputs.firmware_url, '.zip' )
-      run: unzip firmware.zip
+      run: |
+        if [[ "${{ github.event.inputs.firmware_url }}" == *.zip ]]; then
+          unzip firmware.zip
+        fi
 
     # Extract partitions from payload.bin if found in the firmware
     - name: Extract partitions from payload.bin
-      if: exists('payload.bin')
-      run: payload-dumper-go payload.bin
+      run: |
+        if [ -f "payload.bin" ]; then
+          payload-dumper-go payload.bin
+        fi
 
     # Extract other image files from the firmware (if present)
     - name: Extract images from archive
-      if: exists('firmware.zip') && !exists('payload.bin')
       run: |
-        mkdir extracted_images
-        unzip firmware.zip -d extracted_images
-        # Add commands here to handle different image types like boot.img, recovery.img
+        if [[ -f "firmware.zip" && ! -f "payload.bin" ]]; then
+          mkdir extracted_images
+          unzip firmware.zip -d extracted_images
+          # Add commands here to handle different image types like boot.img, recovery.img
+        fi
 
     # Move recovery.img to output folder if it exists
     - name: Move recovery.img to output
       run: |
         mkdir -p output
-        if [ -f recovery.img ]; then
+        if [ -f "recovery.img" ]; then
           mv recovery.img output/
         fi
 
@@ -70,7 +75,7 @@ jobs:
     # Upload other images as an artifact (optional)
     - name: Upload extracted images (optional)
       uses: actions/upload-artifact@v3
-      if: exists('extracted_images/')
+      if: ${{ always() }}
       with:
         name: extracted-images
         path: extracted_images/

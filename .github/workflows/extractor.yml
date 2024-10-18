@@ -19,15 +19,21 @@ jobs:
 
     # Install required dependencies
     - name: Install xz and unzip
-      run: sudo apt-get update && sudo apt-get install -y xz-utils unzip
+      run: sudo apt-get update && sudo apt-get install -y xz-utils unzip git
 
-    # Download payload-dumper-go
-    - name: Download payload-dumper-go
+    # Clone the payload-dumper-go repository
+    - name: Clone payload-dumper-go
+      run: git clone https://github.com/ssut/payload-dumper-go.git
+
+    # Change directory to the cloned repository
+    - name: Change directory
+      run: cd payload-dumper-go
+
+    # Build the payload-dumper-go binary
+    - name: Build payload-dumper-go
       run: |
-        wget https://github.com/ssut/payload-dumper-go/releases/download/v1.3.0/payload-dumper-go_linux_amd64.tar.gz
-        tar -xzvf payload-dumper-go_linux_amd64.tar.gz
-        chmod +x payload-dumper-go
-        sudo mv payload-dumper-go /usr/local/bin/
+        cd payload-dumper-go
+        go build -o payload-dumper-go .
 
     # Download the firmware archive or payload.bin from the given URL
     - name: Download firmware archive
@@ -45,7 +51,7 @@ jobs:
     - name: Extract partitions from payload.bin
       run: |
         if [ -f "payload.bin" ]; then
-          payload-dumper-go payload.bin
+          ./payload-dumper-go payload.bin
         fi
 
     # Extract other image files from the firmware (if present)

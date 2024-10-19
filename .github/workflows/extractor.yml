@@ -1,4 +1,4 @@
-name: Firmware Extraction and Recovery Image Extraction
+name: Firmware Extraction and System Image Extraction
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
         default: 'https://example.com/path/to/firmware.zip'
 
 jobs:
-  extract_firmware_and_recovery_img:
+  extract_firmware_and_system_img:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,10 +20,7 @@ jobs:
     # Install required dependencies
     - name: Install dependencies
       run: |
-        sudo apt-get update && sudo apt-get install -y xz-utils unzip git
-        wget https://dl.google.com/go/go1.19.6.linux-amd64.tar.gz
-        sudo tar -C /usr/local -xzf go1.19.6.linux-amd64.tar.gz
-        export PATH=$PATH:/usr/local/go/bin
+        sudo apt-get update && sudo apt-get install -y xz-utils unzip git python3
 
     # Clone the payload-dumper-go repository
     - name: Clone payload-dumper-go
@@ -58,34 +55,17 @@ jobs:
           ./payload-dumper-go payload.bin
         fi
 
-    # Extract other image files from the firmware (if present)
-    - name: Extract images from archive
+    # Download sdat2img.py from the specified repository
+    - name: Download sdat2img.py
       run: |
-        if [[ -f "firmware.zip" && ! -f "payload.bin" ]]; then
-          mkdir extracted_images
-          unzip firmware.zip -d extracted_images
-        fi
-
-    # Move recovery.img to output folder if it exists
-    - name: Move recovery.img to output
-      run: |
-        mkdir -p output
-        if [ -f "recovery.img" ]; then
-          mv recovery.img output/
-        fi
-
-    # Download dat2img scripts
-    - name: Download dat2img scripts
-      run: |
-        wget https://raw.githubusercontent.com/ShazuxD7/dat2img/master/sdat2img.py
-        wget https://raw.githubusercontent.com/ShazuxD7/dat2img/master/vdat2img.py
+        wget https://raw.githubusercontent.com/amitkumarroushan/xxx.dat.br2folder/master/sdat2img.py
 
     # Check for system.new.dat and system.new.dat.br and convert if found
     - name: Convert system images
       run: |
         if [ -f "system.new.dat" ] || [ -f "system.new.dat.br" ]; then
           if [ -f "system.new.dat.br" ]; then
-            python3 vdat2img.py system.new.dat.br system.img
+            python3 sdat2img.py system.new.dat.br system.img
           fi
           if [ -f "system.new.dat" ]; then
             python3 sdat2img.py system.new.dat system.img
@@ -94,17 +74,21 @@ jobs:
           echo "system.new.dat or system.new.dat.br not found."
         fi
 
-    # Upload recovery.img as an artifact
-    - name: Upload recovery.img
-      uses: actions/upload-artifact@v3
-      with:
-        name: recovery-img
-        path: output/recovery.img
+    # Create output directory
+    - name: Create output directory
+      run: mkdir -p output
 
-    # Upload other images as an artifact (optional)
-    - name: Upload extracted images (optional)
+    # Move extracted images to output directory
+    - name: Move extracted images to output
+      run: |
+        if [ -f "system.img" ]; then
+          mv system.img output/
+        fi
+        # Add any additional image files you want to move to the output directory here
+
+    # Upload extracted files as artifacts
+    - name: Upload extracted files
       uses: actions/upload-artifact@v3
-      if: ${{ always() }}
       with:
-        name: extracted-images
-        path: extracted_images/
+        name: extracted-files
+        path: output/

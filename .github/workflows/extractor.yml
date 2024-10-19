@@ -1,4 +1,4 @@
-name: Firmware Extraction 
+name: Firmware Extraction and Recovery Image Extraction
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
         default: 'https://example.com/path/to/firmware.zip'
 
 jobs:
-  extract_firmware:
+  extract_firmware_and_recovery_img:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,12 +18,16 @@ jobs:
       uses: actions/checkout@v3
 
     # Install required dependencies
-    - name: Install xz, unzip, and python3
-      run: sudo apt-get update && sudo apt-get install -y xz-utils unzip git python3
+    - name: Install xz and unzip
+      run: sudo apt-get update && sudo apt-get install -y xz-utils unzip git
 
     # Clone the payload-dumper-go repository
     - name: Clone payload-dumper-go
       run: git clone https://github.com/ssut/payload-dumper-go.git
+
+    # Change directory to the cloned repository
+    - name: Change directory
+      run: cd payload-dumper-go
 
     # Build the payload-dumper-go binary
     - name: Build payload-dumper-go
@@ -33,7 +37,8 @@ jobs:
 
     # Download the firmware archive or payload.bin from the given URL
     - name: Download firmware archive
-      run: wget -O firmware.zip ${{ github.event.inputs.firmware_url }}
+      run: |
+        wget -O firmware.zip ${{ github.event.inputs.firmware_url }}
 
     # Extract firmware archive (if it's a zip)
     - name: Extract firmware archive
@@ -49,29 +54,11 @@ jobs:
           ./payload-dumper-go payload.bin
         fi
 
-    # Extract system images if system.new.dat or system.new.dat.br is found
-    - name: Extract system images from .dat files
-      run: |
-        if [ -f "system.new.dat" ] || [ -f "system.new.dat.br" ]; then
-          # Check for the transfer list file
-          if [ -f "transfer.list" ]; then
-            OUTPUT_IMAGE_FILE="system.img"
-            if [ -f "system.new.dat.br" ]; then
-              python3 sdat2img.py transfer.list system.new.dat.br "$OUTPUT_IMAGE_FILE"
-            else
-              python3 sdat2img.py transfer.list system.new.dat "$OUTPUT_IMAGE_FILE"
-            fi
-          else
-            echo "Error: transfer.list file not found."
-            exit 1
-          fi
-        fi
-
     # Extract other image files from the firmware (if present)
     - name: Extract images from archive
       run: |
         if [[ -f "firmware.zip" && ! -f "payload.bin" ]]; then
-          mkdir -p extracted_images
+          mkdir extracted_images
           unzip firmware.zip -d extracted_images
         fi
 
@@ -90,29 +77,10 @@ jobs:
         name: recovery-img
         path: output/recovery.img
 
-    # Upload the extracted system image as an artifact
-    - name: Upload system image
-      if: success() && (steps.extract-system-images.outputs.system_image_exists == 'true')
-      run: |
-        if [ -f "system.img" ]; then
-          mkdir -p output
-          cp system.img output/
-        fi
+    # Upload other images as an artifact (optional)
+    - name: Upload extracted images (optional)
       uses: actions/upload-artifact@v3
-      with:
-        name: system-img
-        path: output/system.img
-
-    # Upload other extracted images as artifacts
-    - name: Upload extracted images
-      uses: actions/upload-artifact@v3
+      if: ${{ always() }}
       with:
         name: extracted-images
-        path: extracted_images/**
-
-    # Optionally, upload all images in the output directory
-    - name: Upload all output images
-      uses: actions/upload-artifact@v3
-      with:
-        name: all-output-images
-        path: output/**
+        path: extracted_images/

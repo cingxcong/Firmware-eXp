@@ -18,22 +18,26 @@ jobs:
       uses: actions/checkout@v3
 
     # Install required dependencies
-    - name: Install xz and unzip
-      run: sudo apt-get update && sudo apt-get install -y xz-utils unzip git
+    - name: Install dependencies
+      run: |
+        sudo apt-get update && sudo apt-get install -y xz-utils unzip git
+        wget https://dl.google.com/go/go1.19.6.linux-amd64.tar.gz
+        sudo tar -C /usr/local -xzf go1.19.6.linux-amd64.tar.gz
+        export PATH=$PATH:/usr/local/go/bin
 
     # Clone the payload-dumper-go repository
     - name: Clone payload-dumper-go
       run: git clone https://github.com/ssut/payload-dumper-go.git
-
-    # Change directory to the cloned repository
-    - name: Change directory
-      run: cd payload-dumper-go
 
     # Build the payload-dumper-go binary
     - name: Build payload-dumper-go
       run: |
         cd payload-dumper-go
         go build -o payload-dumper-go .
+        if [ ! -f "payload-dumper-go" ]; then
+          echo "payload-dumper-go build failed"
+          exit 1
+        fi
 
     # Download the firmware archive or payload.bin from the given URL
     - name: Download firmware archive
@@ -68,6 +72,26 @@ jobs:
         mkdir -p output
         if [ -f "recovery.img" ]; then
           mv recovery.img output/
+        fi
+
+    # Download dat2img scripts
+    - name: Download dat2img scripts
+      run: |
+        wget https://raw.githubusercontent.com/ShazuxD7/dat2img/master/sdat2img.py
+        wget https://raw.githubusercontent.com/ShazuxD7/dat2img/master/vdat2img.py
+
+    # Check for system.new.dat and system.new.dat.br and convert if found
+    - name: Convert system images
+      run: |
+        if [ -f "system.new.dat" ] || [ -f "system.new.dat.br" ]; then
+          if [ -f "system.new.dat.br" ]; then
+            python3 vdat2img.py system.new.dat.br system.img
+          fi
+          if [ -f "system.new.dat" ]; then
+            python3 sdat2img.py system.new.dat system.img
+          fi
+        else
+          echo "system.new.dat or system.new.dat.br not found."
         fi
 
     # Upload recovery.img as an artifact

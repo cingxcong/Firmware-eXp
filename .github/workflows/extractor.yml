@@ -1,4 +1,4 @@
-name: Firmware Extraction and Recovery Image Extraction
+name: Firmware Extraction 
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
         default: 'https://example.com/path/to/firmware.zip'
 
 jobs:
-  extract_firmware_and_recovery_img:
+  extract_firmware:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,11 +19,15 @@ jobs:
 
     # Install required dependencies
     - name: Install xz and unzip
-      run: sudo apt-get update && sudo apt-get install -y xz-utils unzip git golang-go
+      run: sudo apt-get update && sudo apt-get install -y xz-utils unzip git
 
     # Clone the payload-dumper-go repository
     - name: Clone payload-dumper-go
       run: git clone https://github.com/ssut/payload-dumper-go.git
+
+    # Change directory to the cloned repository
+    - name: Change directory
+      run: cd payload-dumper-go
 
     # Build the payload-dumper-go binary
     - name: Build payload-dumper-go
@@ -47,17 +51,7 @@ jobs:
     - name: Extract partitions from payload.bin
       run: |
         if [ -f "payload.bin" ]; then
-          echo "Extracting from payload.bin"
-          ./payload-dumper-go/payload-dumper-go payload.bin
-        fi
-
-    # Extract from system.new.dat if found
-    - name: Extract from system.new.dat
-      run: |
-        if [[ -f "system.new.dat" ]]; then
-          echo "Extracting from system.new.dat"
-          # Use payload.bin for initializing extraction from system.new.dat
-          ./payload-dumper-go/payload-dumper-go system.new.dat
+          ./payload-dumper-go payload.bin
         fi
 
     # Extract other image files from the firmware (if present)

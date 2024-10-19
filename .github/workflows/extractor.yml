@@ -92,11 +92,17 @@ jobs:
 
     # Upload the extracted system image as an artifact
     - name: Upload system image
-      if: exists('system.img')
+      if: success() && steps.move-recovery-img.outputs.exists == 'true'
+      run: |
+        if [ -f "system.img" ]; then
+          echo "Uploading system.img"
+          mkdir -p output
+          cp system.img output/
+        fi
       uses: actions/upload-artifact@v3
       with:
         name: system-img
-        path: system.img
+        path: output/system.img
 
     # Upload other extracted images as artifacts
     - name: Upload extracted images
